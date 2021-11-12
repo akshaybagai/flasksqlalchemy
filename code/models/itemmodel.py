@@ -1,7 +1,13 @@
 import sqlite3
+from ..db import db
 from flask_restful import Resource, reqparse
 
-class ItemModel:
+class ItemModel(db.Model):
+
+    __tablename__ = "items"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80))
+    price = db.Column(db.Float(precision=2))
 
     def __init__(self,name, price):
         self.name = name
@@ -11,18 +17,11 @@ class ItemModel:
         return {'name': self.name, 'price': self.price}
 
     @classmethod
-    def find_by_name(self, name):
-        connection = sqlite3.connect("data.db")
-        cursor = connection.cursor()
+    def find_by_name(cls, name):
+        # similar to rest template
+        return cls.query.filter_by(name=name).first()
 
-        query = "select * from items where name = ?"
-        result = cursor.execute(query, (name,))
-        row = result.fetchone()
-        if row:
-            print(row)
-            item = ItemModel(*row)
-        else:
-            item = None
-
-        connection.close()
-        return item
+    # similar to hibernate if the object id exists, the object is updated
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()

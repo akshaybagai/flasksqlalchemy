@@ -22,17 +22,25 @@ class Item(Resource):
         return {'message': "item not found"}, 404
 
     def post(self, name):
-        if next(filter(lambda x: x['name'] == name, items), None) is not None:
+        if ItemModel.find_by_name(name):
             return {'message', "An item with name {} already exits".format(name)}, 400
 
-        data = request.get_json()
-        item = {'name': name, 'price': data['price']}
-        items.append(item)
-        return item, 201
+        data = Item.parser.parse_args()
+
+        item = ItemModel(name, data['price'])
+
+        try:
+            item.save_to_db()
+        except:
+            return {'message': 'error in inserting item'}, 500
+
+        return item.json(), 201
 
     def delete(self, name):
-        global items
-        items = list(filter(lambda x: x['name'] != name, items))
+        item = ItemModel.find_by_name(name)
+        if item:
+            item.delete()
+
         return {'message': 'item deleted'}
 
     # PUT method is always idempotent
@@ -40,13 +48,15 @@ class Item(Resource):
 
         data = Item.parser.parse_args()
 
-        item = next(filter(lambda x: x['name'] == name, items), None)
+        item = ItemModel.find_by_name(name)
+
         if item is None:
             item = {'name': name, 'price': data['price']}
-            items.append(item)
         else:
-            item.update(data)
-        return item
+            item.price = data['price']
+
+        item.save_to_db()
+        return item.json()
 
 class ItemsList(Resource):
     def get(self):

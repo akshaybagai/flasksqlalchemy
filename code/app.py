@@ -7,6 +7,8 @@ from code.resources.user import UserRegister
 from code.resources.item import Item, ItemsList
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 app.secret_key = 'jose'
 api = Api(app)
 
@@ -85,4 +87,6 @@ def get_item_in_store(name):
 
 
 if __name__ == '__main__':
+    from db import db
+    db.init_app(app)
     app.run(port=5000)
